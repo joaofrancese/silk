@@ -33,7 +33,12 @@ def wrap_cursor_execute():
 class SilkyCursorWrapper(CursorWrapper):
     def execute(self, sql, params=()):
         tb = ''.join(reversed(traceback.format_stack()))
-        sql_query = sql % params
+        try:
+            sql_query = sql % params
+        except UnicodeDecodeError as ex:
+            # TODO: investigate error.
+            Logger.error('Exception while applying query parameters to record a query.')
+            sql_query = 'UnicodeDecodeError while applying parameters to query: %s' % ex
         if not _should_wrap(sql_query):
             return self.cursor.execute(sql, params)
         query_dict = {
