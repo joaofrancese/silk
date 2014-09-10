@@ -101,6 +101,7 @@
                 <tr>
                     <th class="left-aligned">At</th>
                     <th class="left-aligned">Tables</th>
+                    <th class="left-aligned">Method</th>
                     <th class="right-aligned">Num. Joins</th>
                     <th class="right-aligned">Execution Time (ms)</th>
                 </tr>
@@ -117,6 +118,7 @@
                         ';">
                         <td class="left-aligned">+{{ sql_query.start_time_relative }}</td>
                         <td class="left-aligned">{{ sql_query.tables_involved|join:", " }}</td>
+                        <td class="left-aligned">{{ sql_query.last_project_method }}</td>
                         <td class="right-aligned">{{ sql_query.num_joins }}</td>
                         <td class="right-aligned">{{ sql_query.time_taken }}</td>
                     </tr>

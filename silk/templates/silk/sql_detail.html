@@ -54,6 +54,9 @@
         .file-path {
             font-size: 13px;
         }
+        .file-path.dimmed {
+            color: #aaaaaa;
+        }
 
 
 
@@ -110,9 +113,9 @@
                 Use it to figure out where and why this SQL query is being executed and whether or not
                 it's actually neccessary.
             </div>
-            {% for ln in traceback %}
+            {% for ln, highlight in traceback %}
                 {% if ln %}
-                    <div class="file-path">
+                    <div class="file-path {% if not highlight %}dimmed{% endif %}">
                         {{ ln }}
                     </div>
                     {% if forloop.counter == pos %}

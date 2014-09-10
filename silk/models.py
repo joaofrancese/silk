@@ -1,12 +1,13 @@
-from collections import Counter
-import json
-
-from django.db import models
-from django.db.models import DateTimeField, TextField, CharField, ForeignKey, IntegerField, BooleanField, F, \
+from django.conf import settings
+from django.db import models, transaction
+from django.db.models import DateTimeField, TextField, CharField, ForeignKey, IntegerField, BooleanField, \
     ManyToManyField, OneToOneField, FloatField
 from django.utils import timezone
-from django.db import transaction
+import json
+import os
+import re
 import sqlparse
+
 
 
 
@@ -135,9 +136,20 @@ class SQLQuery(models.Model):
     traceback = TextField()
     objects = SQLQueryManager()
 
+    # TODO: Document SILKY_PROJECT_ROOT_DIR
+    project_dir = getattr(settings, 'SILKY_PROJECT_ROOT_DIR', '')
+    if project_dir and project_dir[-1] != os.sep:
+        project_dir += os.sep
+    traceback_pattern = re.compile(r'File "%s(?P<file>.*)", line (?P<line>\d+), in (?P<method>.*)'
+                                   % re.escape(project_dir))
+
     @property
     def traceback_ln_only(self):
         return '\n'.join(self.traceback.split('\n')[::2])
+
+    @property
+    def traceback_ln_only_with_highlights(self):
+        return [(tb, bool(self.traceback_pattern.match(tb.strip()))) for tb in self.traceback.split('\n')[::2]]
 
     @property
     def formatted_query(self):
@@ -169,6 +181,15 @@ class SQLQuery(models.Model):
                 except IndexError:  # Reach the end
                     pass
         return tables
+
+    @property
+    def last_project_method(self):
+        for tb in self.traceback.split('\n')[2::2]:
+            if 'django\db' not in tb:
+                result = self.traceback_pattern.match(tb.strip())
+                if result:
+                    return "%s in %s:%s" % (result.group('method'), result.group('file'), result.group('line'))
+        return ""
 
     def calculate_time_taken(self):
         if self.end_time and self.start_time:
