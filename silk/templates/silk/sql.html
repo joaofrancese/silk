@@ -69,6 +69,22 @@
     <link rel="stylesheet" href="{% static 'silk/css/cell.css' %}">
 {% endblock %}
 
+{% block js %}
+    <script>
+        $(document).ready(function () {
+            $('.data-row').on('click', function(ev) {
+                var MOUSEBUTTON_MIDDLE = 2;
+                var newTab = ev.which == MOUSEBUTTON_MIDDLE || ev.ctrlKey || ev.shiftKey || ev.metaKey;
+                var url = $(this).attr('href').trim();
+                if (newTab)
+                    window.open(url, '_blank');
+                else
+                    window.location.href = url;
+            });
+        });
+    </script>
+{% endblock %}
+
 {% block menu %}
     {% if profile %}
         {% profile_menu request profile silk_request %}
@@ -107,15 +123,15 @@
                 </tr>
                 {% for sql_query in items %}
                     <!-- TODO: Pretty grimy... -->
-                    <tr class="data-row" onclick="window.location=' \
-                       {% if profile and silk_request %}\
-                           {% url "silk:request_and_profile_sql_detail" silk_request.id profile.id sql_query.id %}\
-                       {% elif profile %}\
-                           {% url "silk:profile_sql_detail" profile.id sql_query.id %}\
-                       {% elif silk_request %}\
-                           {% url "silk:request_sql_detail" silk_request.id sql_query.id %}\
-                       {% endif %}\
-                        ';">
+                    <tr class="data-row" href="
+                       {% if profile and silk_request %}
+                           {% url "silk:request_and_profile_sql_detail" silk_request.id profile.id sql_query.id %}
+                       {% elif profile %}
+                           {% url "silk:profile_sql_detail" profile.id sql_query.id %}
+                       {% elif silk_request %}
+                           {% url "silk:request_sql_detail" silk_request.id sql_query.id %}
+                       {% endif %}
+                        ">
                         <td class="left-aligned">+{{ sql_query.start_time_relative }}</td>
                         <td class="left-aligned">{{ sql_query.tables_involved|join:", " }}</td>
                         <td class="left-aligned">{{ sql_query.last_project_method }}</td>
