@@ -136,12 +136,32 @@ class SQLQuery(models.Model):
     traceback = TextField()
     objects = SQLQueryManager()
 
-    # TODO: Document SILKY_PROJECT_ROOT_DIR
-    project_dir = getattr(settings, 'SILKY_PROJECT_ROOT_DIR', '')
+    # TODO: Document SILKY_PROJECT_ROOT_DIR and SILKY_PROJECT_EXCLUDE_DIRS
+    project_dir = getattr(settings, 'SILKY_PROJECT_ROOT_DIR', None) or ''
+    exclude_dirs = getattr(settings, 'SILKY_PROJECT_EXCLUDE_DIRS', None) or []
     if project_dir and project_dir[-1] != os.sep:
         project_dir += os.sep
     traceback_pattern = re.compile(r'File "%s(?P<file>.*)", line (?P<line>\d+), in (?P<method>.*)'
                                    % re.escape(project_dir))
+    exclude_patterns = [
+        re.compile(r'File ".*silk%ssql.*", line \d+, in .*' % os.sep),
+        re.compile(r'File ".*django%sdb%smodels.*", line \d+, in .*' % (os.sep, os.sep)),
+    ]
+    for exclude_dir in exclude_dirs:
+        if exclude_dir[-1] != os.sep:
+            exclude_dir += os.sep
+        exclude_patterns.append(re.compile(r'File "%s.*", line \d+, in .*'
+                                           % re.escape(exclude_dir)))
+
+    def match_tb(self, tb):
+        tb = tb.strip()
+        match = self.traceback_pattern.match(tb)
+        for exclude_pattern in self.exclude_patterns:
+            if not match:
+                break
+            if exclude_pattern.match(tb):
+                match = False
+        return match
 
     @property
     def traceback_ln_only(self):
@@ -149,7 +169,7 @@ class SQLQuery(models.Model):
 
     @property
     def traceback_ln_only_with_highlights(self):
-        return [(tb, bool(self.traceback_pattern.match(tb.strip()))) for tb in self.traceback.split('\n')[::2]]
+        return [(tb, bool(self.match_tb(tb))) for tb in self.traceback.split('\n')[::2]]
 
     @property
     def formatted_query(self):
@@ -184,11 +204,10 @@ class SQLQuery(models.Model):
 
     @property
     def last_project_method(self):
-        for tb in self.traceback.split('\n')[2::2]:
-            if 'django\db' not in tb:
-                result = self.traceback_pattern.match(tb.strip())
-                if result:
-                    return "%s in %s:%s" % (result.group('method'), result.group('file'), result.group('line'))
+        for tb in self.traceback.split('\n')[::2]:
+            match = self.match_tb(tb)
+            if match:
+                return "%s in %s:%s" % (match.group('method'), match.group('file'), match.group('line'))
         return ""
 
     def calculate_time_taken(self):
