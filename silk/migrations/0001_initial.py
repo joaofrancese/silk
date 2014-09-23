@@ -1,23 +1,28 @@
 # -*- coding: utf-8 -*-
-from south.utils import datetime_utils as datetime
-from south.db import db
-from south.v2 import SchemaMigration
+from django.conf import settings
 from django.db import models
+from south.db import db
+from south.utils import datetime_utils as datetime
+from south.v2 import SchemaMigration
 
 
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
+        index_fields_max_size = 300
+        if 'mysql' in settings.DATABASES['default']['ENGINE']:
+            index_fields_max_size = 255
+
         # Adding model 'Request'
         db.create_table(u'silk_request', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('path', self.gf('django.db.models.fields.CharField')(max_length=300, db_index=True)),
+            ('path', self.gf('django.db.models.fields.CharField')(max_length=index_fields_max_size, db_index=True)),
             ('query_params', self.gf('django.db.models.fields.TextField')(default='', blank=True)),
             ('raw_body', self.gf('django.db.models.fields.TextField')(default='', blank=True)),
             ('body', self.gf('django.db.models.fields.TextField')(default='', blank=True)),
             ('method', self.gf('django.db.models.fields.CharField')(max_length=10)),
             ('start_time', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
-            ('view_name', self.gf('django.db.models.fields.CharField')(default='', max_length=300, db_index=True, blank=True)),
+            ('view_name', self.gf('django.db.models.fields.CharField')(default='', max_length=index_fields_max_size, db_index=True, blank=True)),
             ('end_time', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
             ('time_taken', self.gf('django.db.models.fields.FloatField')(null=True, blank=True)),
             ('encoded_headers', self.gf('django.db.models.fields.TextField')(default='', blank=True)),
