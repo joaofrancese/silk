@@ -215,12 +215,12 @@ class SQLQuery(models.Model):
             interval = self.end_time - self.start_time
             self.time_taken = interval.total_seconds() * 1000
 
-    @transaction.commit_on_success()
+    @transaction.atomic()
     def save(self, *args, **kwargs):
         self.calculate_time_taken()
         super(SQLQuery, self).save(*args, **kwargs)
 
-    @transaction.commit_on_success()
+    @transaction.atomic()
     def delete(self, *args, **kwargs):
         self.request.num_sql_queries -= 1
         self.request.save()
